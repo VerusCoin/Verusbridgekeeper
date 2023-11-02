@@ -78,12 +78,13 @@ chmod +x ~/bin/startbridge.sh
 ```
 When using PM2, console logs are stored in `~/.pm2/logs/bridgekeeper-out.log` and the errors in `~/.pm2/logs/bridgekeeper-error.log`
 
-This will result in the service running on port 8000 it can be queried using the following examples:
+This will result in the service running on port 8002 it can be queried using the following examples:
 ```shell
-curl  --data-binary '{"jsonrpc":"1.0","id":"curltext","method":"getinfo","params":[]}' -H 'content-type:text/plain;' http://127.0.0.1:8000
+curl -u <yourusername>:<yourpassword> --data-binary '{"jsonrpc":"1.0","id":"curltext","method":"getinfo","params":[]}' -H 'content-type:text/plain;' http://127.0.0.1:8002
 
-curl  --data-binary '{"jsonrpc":"1.0","id":"curltext","method":"getcurrency","params":["iCtawpxUiCc2sEupt7Z4u8SDAncGZpgSKm"]}' -H 'content-type:text/plain;' http://127.0.0.1:8000
+curl -u <yourusername>:<yourpassword> --data-binary '{"jsonrpc":"1.0","id":"curltext","method":"getcurrency","params":["iCtawpxUiCc2sEupt7Z4u8SDAncGZpgSKm"]}' -H 'content-type:text/plain;' http://127.0.0.1:8002
 ```
+Please check in the config file above for `<yourusername>`, `<yourpassword>` and the portnumber that is configured and use those details in the above test calls.
 
 ## Optional: logrotate with PM2
 As root user, create a file called /etc/logrotate.d/verusd-rpc with these contents:
