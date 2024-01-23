@@ -11,16 +11,17 @@
     "author": "",
     "license": "ISC",
     "dependencies": {
-        "async": "^3.2.4",
-        "axios": "0.25.0",
-        "base58check": "^2.0.0",
+        "async": "3.2.4",
+        "axios": "1.6.5",
+        "base58check": "2.0.0",
+        "bignumber.js": "9.1.2",
         "bitgo-utxo-lib": "git+https://github.com/VerusCoin/bitgo-utxo-lib.git",
         "blake2b-wasm": "git+https://github.com/michaeltout/blake2b-wasm.git",
-        "ethers": "5.1.0",
+        "ethers": "5.4.7",
         "ini": "2.0.0",
         "long": "5.2.0",
         "react-native-cache": "git+https://github.com/michaeltout/react-native-cache.git",
-        "web3": "1.10.0"
+        "web3": "1.10.1"
     },
     "devDependencies": {
         "eslint": "8.11.0"
