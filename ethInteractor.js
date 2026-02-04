@@ -1529,14 +1529,18 @@ exports.submitImports = async(CTransferArray) => {
             if (!processed) {
                 submitArray.push(CTempArray[0])
             } else {
+                log("SubmitImports: Import already processed, skipping...");
                 return { result: globalsubmitimports.transactionHash };
             }
+        } else {
+            log("SubmitImports: No imports to submit.");
+            return { result: globalsubmitimports.transactionHash };
         }
         // catch any errors and return
         const testcall = await delegatorContract.methods.submitImports(submitArray[0]).call(); //test call
         // prevent revert if gas limit is exceeded
         const gascalc = await delegatorContract.methods.submitImports(submitArray[0]).estimateGas({ from: account.address });
-        if (CTempArray)
+
         log("Submitting transfers to ETH, total: " + CTempArray[0].transfers.length);
 
         const pendingTransactions = await web3.eth.getBlock('pending', true);
@@ -1553,13 +1557,15 @@ exports.submitImports = async(CTransferArray) => {
             log("Submitimports: Pending transaction found, skipping...");
         } else if (submitArray.length > 0 && (parseInt(gascalc) < parseInt(submitImportMaxGas))) {
             // Get median gas price from the last block's transactions
+            log("Calculating Median Gas Price for submitImports...");
             const gasPrice = await getMedianGasPrice();
-            
+            log("Using gas price: " + gasPrice);
             globalsubmitimports = await delegatorContract.methods.submitImports(submitArray[0]).send({ 
                 from: account.address, 
                 gas: submitImportMaxGas,
                 gasPrice: gasPrice
             });
+            log("submitImports: success");
             // if the submit import spend  succeeds then we can cache the last submit import.
             await setCachedApi(CTransferArray, 'lastsubmitImports');
         } else {
@@ -1574,7 +1580,7 @@ exports.submitImports = async(CTransferArray) => {
             if (error.receipt)
                 console.log( "submitImports:" + error.receipt);
 
-            console.log( "submitImports:" + error.message);
+            console.log( "submitImports:" + (error?.message ? error.message : error));
         }
         return { result: { result: error.message, error: true } };
     }
