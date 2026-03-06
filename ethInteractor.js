@@ -121,27 +121,41 @@ const web3Options = {
     reconnect: reconnectOptions
 };
 
-// Get median gas price from the last block's transactions
+// Get gas price based on latest block gas utilization
 async function getMedianGasPrice() {
-    const block = await web3.eth.getBlock('latest');
-    if (!block || block.transactions.length === 0) {
-        throw new Error('No transactions in latest block');
+    const latestBlock = await web3.eth.getBlock('latest');
+
+    if (!latestBlock || latestBlock.baseFeePerGas == null) {
+        throw new Error('Could not get baseFeePerGas from latest block');
     }
-    
-    const blockTransactionNum = block.transactions.length === 1 ? 1 : Math.ceil(block.transactions.length / 2);
-    const transaction = await web3.eth.getTransaction(block.transactions[blockTransactionNum - 1]);
-    
-    if (!transaction || !transaction.gasPrice) {
-        throw new Error('Could not get gas price from transaction');
+
+    if (latestBlock.gasUsed == null || latestBlock.gasLimit == null) {
+        throw new Error('Could not get gasUsed/gasLimit from latest block');
     }
-    
-    const baseFee = block.baseFeePerGas.toString() || '0';
-    const gasPriceGwei = web3.utils.fromWei(transaction.gasPrice, 'gwei');
-    const baseFeeGwei = web3.utils.fromWei(baseFee, 'gwei');
-    
-    console.log(`[GasPrice] Block: ${block.number}, BaseFee: ${baseFeeGwei} Gwei, GasPrice: ${gasPriceGwei} Gwei`);
-    
-    return transaction.gasPrice;
+
+    const latestBaseFee = BigInt(latestBlock.baseFeePerGas.toString());
+    const gasUsed = BigInt(latestBlock.gasUsed.toString());
+    const gasLimit = BigInt(latestBlock.gasLimit.toString());
+
+    if (gasLimit === BigInt(0)) {
+        throw new Error('Latest block gasLimit is zero');
+    }
+
+    const utilizationPercent = Number(gasUsed * BigInt(10000) / gasLimit) / 100;
+    const isHighUtilization = utilizationPercent > 50;
+
+    const selectedGasPrice = isHighUtilization
+        ? (latestBaseFee * BigInt(115)) / BigInt(100)
+        : latestBaseFee;
+
+    const latestBaseFeeGwei = web3.utils.fromWei(latestBaseFee.toString(), 'gwei');
+    const selectedGasPriceGwei = web3.utils.fromWei(selectedGasPrice.toString(), 'gwei');
+
+    console.log(
+        `[GasPrice] Block: ${latestBlock.number}, GasUsed: ${gasUsed.toString()}, GasLimit: ${gasLimit.toString()}, Utilization: ${utilizationPercent}%, BaseFee: ${latestBaseFeeGwei} Gwei, SelectedGasPrice: ${selectedGasPriceGwei} Gwei`
+    );
+
+    return selectedGasPrice.toString();
 }
 
 Object.assign(String.prototype, {
