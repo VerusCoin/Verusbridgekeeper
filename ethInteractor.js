@@ -145,7 +145,7 @@ async function getMedianGasPrice() {
     const isHighUtilization = utilizationPercent > 50;
 
     const selectedGasPrice = isHighUtilization
-        ? (latestBaseFee * BigInt(120)) / BigInt(100)
+        ? (latestBaseFee * BigInt(115)) / BigInt(100)
         : latestBaseFee;
 
     const latestBaseFeeGwei = web3.utils.fromWei(latestBaseFee.toString(), 'gwei');
