@@ -931,6 +931,25 @@ exports.getExports = async(input) => {
 
     heightstart = heightstart == 1 ? 0 : heightstart;
 
+    // Defensive clamp: limit the block range sent to eth_getProof.
+    // Reth enforces --rpc.eth-proof-window; if the backlog exceeds that
+    // window the RPC reverts with "distance to target block exceeds
+    // maximum proof window".  Keep this value at or below the node's
+    // configured window.  2000 is safe for common 2048 / 4096 settings.
+    const MAX_PROOF_WINDOW = 2000;
+
+    if (typeof heightend === 'string') heightend = parseInt(heightend);
+    if (typeof heightstart === 'string') heightstart = parseInt(heightstart);
+
+    const clampRange = (start, end, win) => {
+        start = parseInt(start); end = parseInt(end);
+        if (isNaN(start)) start = 0;
+        if (isNaN(end)) end = 0;
+        if (start < 0) start = 0;
+        if (end > 0 && (end - start) > win) start = end - win;
+        return { start, end };
+    };
+
     try {
         //input chainname should always be VETH
         let bridgeConverterActive;
@@ -939,9 +958,12 @@ exports.getExports = async(input) => {
 
         let exportSets = [];
         const previousStartHeight = await delegatorContract.methods.exportHeights(heightstart).call();
-        exportSets = await delegatorContract.methods.getReadyExportsByRange(previousStartHeight, heightend).call();
+        let rangeStart = (previousStartHeight && previousStartHeight !== "0") ? previousStartHeight : heightstart;
+        let rangeEnd = heightend;
+        ({ start: rangeStart, end: rangeEnd } = clampRange(rangeStart, rangeEnd, MAX_PROOF_WINDOW));
+        exportSets = await delegatorContract.methods.getReadyExportsByRange(rangeStart, rangeEnd).call();
 
-        log("Height end: ", heightend, "heightStart:", heightstart, {previousStartHeight});
+        log("Height end:", rangeEnd, "heightStart:", rangeStart, { previousStartHeight });
 
         for (const exportSet of exportSets) {
             //loop through and add in the proofs for each export set and the additional fields
@@ -957,7 +979,7 @@ exports.getExports = async(input) => {
             outputSet.txid = util.removeHexLeader(exportSet.exportHash).reversebytes(); //export hash used for txid
             outputSet.txoutnum = 0; //exportSet.position;
             outputSet.exportinfo = createCrossChainExport(exportSet.transfers, exportSet.startHeight, exportSet.endHeight, true, bridgeConverterActive);
-            outputSet.partialtransactionproof = await getProof(exportSet.startHeight, heightend);
+            outputSet.partialtransactionproof = await getProof(exportSet.startHeight, exportSet.endHeight);
 
             //serialize the prooflet index
             let components = createComponents(exportSet.transfers, exportSet.startHeight, exportSet.endHeight, exportSet.prevExportHash, bridgeConverterActive);
